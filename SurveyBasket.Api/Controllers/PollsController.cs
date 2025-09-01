@@ -1,8 +1,11 @@
-﻿namespace SurveyBasket.Api.Controllers;
+﻿using SurveyBasket.Api.Mapping;
+
+namespace SurveyBasket.Api.Controllers;
 
 
 [Route("api/[controller]")]
-[ApiController]
+
+[ApiController] //Assign parameter binding
 public class PollsController(IPollService pollService) : ControllerBase
 {
     private readonly IPollService _pollService = pollService;
@@ -11,27 +14,28 @@ public class PollsController(IPollService pollService) : ControllerBase
     [HttpGet("")] // there arre two ways to generate template this is one And the two => [Route("")]
     public IActionResult GetAll()
     {
-        return Ok(_pollService.GetAll());
+        var polls = _pollService.GetAll();
+        return Ok(polls.MapToResponse());
     }
 
-    [HttpGet("{id}")]
-    public IActionResult Get(int id)
+    [HttpGet("{id}")]  //Bad request 
+    public IActionResult Get([FromRoute] int id)
     {
         var poll = _pollService.Get(id);
-        return poll is null ? NotFound(poll) : Ok(poll);
+        return poll is null ? NotFound(poll) : Ok(poll.MapToResponse());
 
     }
     [HttpPost("")]
-    public IActionResult Add(Poll request)
+    public IActionResult Add( [FromForm] CreatePollRequest  request)
     {
-        var newPoll = _pollService.Add(request);
+        var newPoll = _pollService.Add(request.MapToPoll());
         return CreatedAtAction(nameof(Get), new { newPoll.Id }, newPoll);
     }
 
     [HttpPut("{id}")]
-    public IActionResult Update(int id, Poll request)
+    public IActionResult Update([FromRoute] int id,[FromBody] CreatePollRequest request)
     {
-        var isUpdated = _pollService.Update(id, request);
+        var isUpdated = _pollService.Update(id, request.MapToPoll());
         if (!isUpdated)
             return NotFound();
         return NoContent();
